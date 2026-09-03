@@ -132,6 +132,11 @@ MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "500"))
 # half a gigabyte. An hour is generous rather than tight; a job that hits it is
 # stuck, not slow.
 RDF_LOAD_TIMEOUT = int(os.environ.get("RDF_LOAD_TIMEOUT", "3600"))
+# Reachability probes for the "which stores are running" check. Deliberately
+# short: this runs while a page is being rendered, and an unreachable host that
+# refuses the connection answers instantly while one that simply never replies
+# would otherwise hold the request for the full query timeout.
+BACKEND_PROBE_TIMEOUT = int(os.environ.get("BACKEND_PROBE_TIMEOUT", "3"))
 # Whether the original file survives a successful load. Derived files — an
 # OWL/XML conversion, a reasoned graph, the members of an archive — are always
 # removed; this governs only the thing that was uploaded or fetched.
