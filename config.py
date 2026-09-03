@@ -132,3 +132,14 @@ MAX_UPLOAD_MB = int(os.environ.get("MAX_UPLOAD_MB", "500"))
 # half a gigabyte. An hour is generous rather than tight; a job that hits it is
 # stuck, not slow.
 RDF_LOAD_TIMEOUT = int(os.environ.get("RDF_LOAD_TIMEOUT", "3600"))
+# Whether the original file survives a successful load. Derived files — an
+# OWL/XML conversion, a reasoned graph, the members of an archive — are always
+# removed; this governs only the thing that was uploaded or fetched.
+#
+# Keeping it means a graph can be reloaded without fetching again, and that what
+# was actually ingested is still on disk. It also means storing every upload for
+# ever, which at multi-gigabyte scale is most of the disk. On by default because
+# that is what the platform has always done; a large single-user install
+# probably wants it off.
+KEEP_UPLOADED_SOURCES = os.environ.get(
+    "KEEP_UPLOADED_SOURCES", "true").strip().lower() not in ("0", "false", "no", "off")
