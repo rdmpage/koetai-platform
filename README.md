@@ -170,6 +170,31 @@ Those took a Fuseki volume from 6.8 GB to 201 MB and an Oxigraph one from 7.3 GB
 to 83 MB. On a local install `docker compose down -v` is the blunter equivalent,
 and destroys the data with it.
 
+### Loading a large file faster
+
+Uploads go into the store over the SPARQL Graph Store Protocol, which is the
+store's transactional path. Oxigraph's own loader is not, and the gap is wide:
+2.4M triples measured at **67 s over HTTP against 4 s with the loader**, about
+17x. On a multi-gigabyte dump that is the difference between an afternoon and a
+coffee.
+
+`scripts/bulk_load.sh` uses it:
+
+```bash
+scripts/bulk_load.sh --slug col --file ~/taxa.nt.gz
+```
+
+Create the dataset in the UI first — the script reads its graph URI and backend
+from the app, rather than inventing a graph nothing would query. A gzip is
+streamed into the loader rather than unpacked to disk.
+
+It is a script and not a button because the loader needs exclusive access to the
+database directory, so **Oxigraph stops while it runs** and the endpoint is
+unavailable until it finishes. The app cannot arrange that: they are separate
+containers, and giving the app control of the Docker socket in exchange for a
+faster import would hand it root on the host. Fuseki has its own equivalent
+(`tdb2.tdbloader`) and QLever builds its index offline; neither is wired up here.
+
 ### Federation datasets (Comunica)
 
 A dataset with `platform='comunica'` is **virtual**: it stores no data of its own
