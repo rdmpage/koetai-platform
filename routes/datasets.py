@@ -95,7 +95,11 @@ def upload_page(owner_orcid, slug):
     if _is_federation(ds):
         flash("Federation datasets query external sources and cannot be uploaded to.", "info")
         return redirect(url_for("datasets.view", owner_orcid=owner_orcid, slug=slug))
-    return render_template("upload.html", ds=ds, max_upload_mb=config.MAX_UPLOAD_MB)
+    # RDFS reasoning shells out to Jena; OWL RL is a Python package and always
+    # available. The page needs to know so it does not offer the one that is not.
+    from services import jena_service
+    return render_template("upload.html", ds=ds, max_upload_mb=config.MAX_UPLOAD_MB,
+                           jena_available=jena_service.is_available())
 
 
 @bp.route("/<owner_orcid>/<slug>/mapping", methods=["GET"])
