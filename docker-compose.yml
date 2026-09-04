@@ -40,6 +40,8 @@ services:
       # past the size of a compressed dump; a file bigger than this is better
       # fetched by the Web tab, which is not capped at all.
       - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-4096}
+      # Where the app leaves requests for the loader agent, if one is running.
+      - BULK_LOADER_DIR=/data/bulk-loader
       # Container service names, not localhost.
       - FUSEKI_BASE_URL=http://fuseki:3030
       - FUSEKI_DATASET=${FUSEKI_DATASET:-koetai}

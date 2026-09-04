@@ -144,6 +144,10 @@ BACKEND_PROBE_TIMEOUT = int(os.environ.get("BACKEND_PROBE_TIMEOUT", "3"))
 # killed by the kernel OOM killer at ~10 GB. Batching bounds that to roughly the
 # size of one batch, at the cost of the load no longer being atomic.
 RDF_LOAD_BATCH_LINES = int(os.environ.get("RDF_LOAD_BATCH_LINES", "200000"))
+# Where the app and the loader agent exchange requests. The agent is the only
+# thing in the deployment with Docker access; the app only writes files here.
+# See services/bulk_loader.py and deploy/loader-agent/agent.sh.
+BULK_LOADER_DIR = os.environ.get("BULK_LOADER_DIR", "/data/bulk-loader")
 # Whether the original file survives a successful load. Derived files — an
 # OWL/XML conversion, a reasoned graph, the members of an archive — are always
 # removed; this governs only the thing that was uploaded or fetched.
