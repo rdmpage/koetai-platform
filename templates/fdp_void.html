@@ -31,6 +31,13 @@
       </div>
     </div>
 
+    <!-- Metadata sections -->
+    <ul class="nav nav-pills mb-4 border-bottom pb-2">
+      <li class="nav-item me-1"><span class="nav-link disabled text-muted small px-2"><i class="bi bi-archive"></i> Metadata:</span></li>
+      <li class="nav-item"><a class="nav-link text-primary" href="{{ url_for('fdp.dataset', orcid=user.orcid_id, slug=ds.slug) }}"><i class="bi bi-award"></i> FAIR Data Point</a></li>
+      <li class="nav-item"><a class="nav-link active" href="{{ url_for('fdp.void', orcid=user.orcid_id, slug=ds.slug) }}"><i class="bi bi-bar-chart-line"></i> VoID statistics</a></li>
+    </ul>
+
     {% if not stats.ok %}
     <div class="alert alert-warning">
       <i class="bi bi-exclamation-triangle"></i>
