@@ -40,7 +40,25 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('endpoints') }}"><i class="bi bi-diagram-3"></i> Endpoints</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('sparql_editor') }}"><i class="bi bi-braces-asterisk"></i> SPARQL</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('fdp.repository') }}"><i class="bi bi-award"></i> FAIR Data Point</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-archive"></i> Metadata
+          </a>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" href="{{ url_for('fdp.repository') }}">
+                <i class="bi bi-award text-primary me-2"></i>FAIR Data Point
+                <span class="d-block small text-muted ms-4">DCAT / FDP-O catalogue</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('fdp.void_index') }}">
+                <i class="bi bi-bar-chart-line text-primary me-2"></i>VoID statistics
+                <span class="d-block small text-muted ms-4">Class &amp; property profiles</span>
+              </a>
+            </li>
+          </ul>
+        </li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('helppage') }}"><i class="bi bi-book"></i> Help</a></li>
         {% if current_user.is_authenticated %}
         <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard.index') }}">My Datasets</a></li>

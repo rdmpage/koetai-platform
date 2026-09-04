@@ -414,6 +414,18 @@ def dist_web(orcid, slug, n):
     return redirect_to_dataset(orcid, slug)
 
 
+@bp.route("/void", strict_slashes=False)
+def void_index():
+    """Landing page for VoID statistics — lists every public dataset with a link
+    to its VoID profile. Parallel to the FDP repository root at /fdp."""
+    rows = get_db().execute(
+        "SELECT d.slug, d.label, d.description, u.orcid_id, u.name AS owner "
+        "FROM datasets d JOIN users u ON u.id=d.user_id "
+        "WHERE d.is_public=1 ORDER BY u.name, d.label"
+    ).fetchall()
+    return render_template("fdp_void_index.html", datasets=rows)
+
+
 @bp.route("/void/<orcid>/<slug>")
 def void(orcid, slug):
     """VoID statistics for a public dataset — computed live from its endpoint.
