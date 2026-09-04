@@ -61,7 +61,7 @@ def _sparql_endpoint(orcid, slug):
     return f"{config.BASE_URL}/u/{orcid}/{slug}/sparql"
 
 def _void_uri(orcid, slug):
-    return f"{config.BASE_URL}/fdp/dataset/{orcid}/{slug}/void"
+    return f"{config.BASE_URL}/fdp/void/{orcid}/{slug}"
 
 
 # ── Misc helpers ─────────────────────────────────────────────────────────────
@@ -414,7 +414,7 @@ def dist_web(orcid, slug, n):
     return redirect_to_dataset(orcid, slug)
 
 
-@bp.route("/dataset/<orcid>/<slug>/void")
+@bp.route("/void/<orcid>/<slug>")
 def void(orcid, slug):
     """VoID statistics for a public dataset — computed live from its endpoint.
 
