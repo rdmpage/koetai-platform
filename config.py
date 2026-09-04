@@ -137,6 +137,13 @@ RDF_LOAD_TIMEOUT = int(os.environ.get("RDF_LOAD_TIMEOUT", "3600"))
 # refuses the connection answers instantly while one that simply never replies
 # would otherwise hold the request for the full query timeout.
 BACKEND_PROBE_TIMEOUT = int(os.environ.get("BACKEND_PROBE_TIMEOUT", "3"))
+# Line-based RDF (N-Triples, N-Quads) is sent to the store in batches of this
+# many lines rather than as one request. A Graph Store Protocol write is one
+# transaction, and the store holds it in memory until it commits: an unchunked
+# 9M-triple load was measured at 12.7 GB resident, and two real imports were
+# killed by the kernel OOM killer at ~10 GB. Batching bounds that to roughly the
+# size of one batch, at the cost of the load no longer being atomic.
+RDF_LOAD_BATCH_LINES = int(os.environ.get("RDF_LOAD_BATCH_LINES", "200000"))
 # Whether the original file survives a successful load. Derived files — an
 # OWL/XML conversion, a reasoned graph, the members of an archive — are always
 # removed; this governs only the thing that was uploaded or fetched.
