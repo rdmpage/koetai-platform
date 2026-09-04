@@ -58,6 +58,9 @@ def _web_dist_uri(orcid, slug, n):
 def _sparql_endpoint(orcid, slug):
     return f"{config.BASE_URL}/u/{orcid}/{slug}/sparql"
 
+def _void_uri(orcid, slug):
+    return f"{config.BASE_URL}/fdp/void/{orcid}/{slug}"
+
 
 # ── Misc helpers ─────────────────────────────────────────────────────────────
 
@@ -403,6 +406,67 @@ def dist_web(orcid, slug, n):
         return _ttl_response(_web_dist_ttl(ds, user, srcs[n], n),
                              _web_dist_uri(orcid, slug, n))
     return redirect_to_dataset(orcid, slug)
+
+
+@bp.route("/void/<orcid>/<slug>")
+def void(orcid, slug):
+    """VoID statistics for a public dataset — computed live from its endpoint.
+
+    Content-negotiated: `Accept: text/turtle` yields a void:Dataset in Turtle,
+    otherwise a human-readable statistics page.
+    """
+    from services import void_service
+    user = _get_user(orcid)
+    ds   = _get_dataset(orcid, slug)
+    if not user or not ds:
+        abort(404)
+
+    stats = void_service.compute(ds)
+    void_uri = _void_uri(orcid, slug)
+
+    if _wants_rdf():
+        now = _now()
+        ttl = void_service.to_turtle(
+            stats, void_uri,
+            dataset_uri=_dataset_uri(orcid, slug),
+            sparql_endpoint=_sparql_endpoint(orcid, slug),
+            title=ds["label"], issued=now, modified=now,
+        )
+        return _ttl_response(ttl, void_uri)
+
+    return render_template("fdp_void.html",
+                           user=user, ds=ds, stats=stats,
+                           void_uri=void_uri,
+                           dataset_uri=_dataset_uri(orcid, slug),
+                           sparql_uri=_sparql_endpoint(orcid, slug),
+                           curie=_curie)
+
+
+# Prefixes for compact display of class/property URIs in the VoID table.
+_CURIE_PREFIXES = [
+    ("rdf:",  "http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+    ("rdfs:", "http://www.w3.org/2000/01/rdf-schema#"),
+    ("owl:",  "http://www.w3.org/2002/07/owl#"),
+    ("skos:", "http://www.w3.org/2004/02/skos/core#"),
+    ("dct:",  "http://purl.org/dc/terms/"),
+    ("dc:",   "http://purl.org/dc/elements/1.1/"),
+    ("foaf:", "http://xmlns.com/foaf/0.1/"),
+    ("dcat:", "http://www.w3.org/ns/dcat#"),
+    ("void:", "http://rdfs.org/ns/void#"),
+    ("prov:", "http://www.w3.org/ns/prov#"),
+    ("schema:", "http://schema.org/"),
+    ("sh:",   "http://www.w3.org/ns/shacl#"),
+    ("xsd:",  "http://www.w3.org/2001/XMLSchema#"),
+    ("obo:",  "http://purl.obolibrary.org/obo/"),
+    ("wd:",   "http://www.wikidata.org/entity/"),
+    ("wdt:",  "http://www.wikidata.org/prop/direct/"),
+]
+
+def _curie(uri):
+    for pfx, ns in _CURIE_PREFIXES:
+        if uri.startswith(ns):
+            return pfx + uri[len(ns):]
+    return uri
 
 
 def redirect_to_dataset(orcid, slug):
