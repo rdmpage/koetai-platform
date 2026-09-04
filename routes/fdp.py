@@ -30,6 +30,8 @@ _PREFIXES = """\
 @prefix ldp:   <http://www.w3.org/ns/ldp#> .
 @prefix lang:  <http://id.loc.gov/vocabulary/iso639-1/> .
 @prefix prov:  <http://www.w3.org/ns/prov#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix void:  <http://rdfs.org/ns/void#> .
 """
 
 _ORG_URI  = f"{config.BASE_URL}/fdp/org"
@@ -59,7 +61,7 @@ def _sparql_endpoint(orcid, slug):
     return f"{config.BASE_URL}/u/{orcid}/{slug}/sparql"
 
 def _void_uri(orcid, slug):
-    return f"{config.BASE_URL}/fdp/void/{orcid}/{slug}"
+    return f"{config.BASE_URL}/fdp/dataset/{orcid}/{slug}/void"
 
 
 # ── Misc helpers ─────────────────────────────────────────────────────────────
@@ -217,9 +219,12 @@ def _dataset_ttl(ds, user, git_srcs, web_srcs):
             kw_ttl = "    dcat:keyword " + ", ".join(parts) + " ;\n"
     theme_ttl = f"    dcat:theme <{ds['fdp_theme']}> ;\n" if ds["fdp_theme"] else ""
 
+    void_uri  = _void_uri(orcid, ds["slug"])
     dist_uris = _all_dist_uris(orcid, ds["slug"], git_srcs, web_srcs)
     dist_lines = "\n".join(f"    dcat:distribution <{u}> ;" for u in dist_uris)
-    contains   = ", ".join(f"<{u}>" for u in dist_uris)
+    # The VoID profile is an FDP child resource of the dataset: linked with
+    # rdfs:seeAlso and enumerated in ldp:contains so a harvester walks into it.
+    contains   = ", ".join(f"<{u}>" for u in dist_uris + [void_uri])
 
     # prov:wasDerivedFrom for git repos
     prov_lines = ""
@@ -242,7 +247,8 @@ def _dataset_ttl(ds, user, git_srcs, web_srcs):
     dct:isPartOf <{_catalog_uri(orcid)}> ;
     dcat:accessURL <{_sparql_endpoint(orcid, ds['slug'])}> ;
 {dist_lines}
-{kw_ttl}{theme_ttl}{prov_lines}    fdp:metadataIdentifier <{uri}> ;
+{kw_ttl}{theme_ttl}{prov_lines}    rdfs:seeAlso <{void_uri}> ;
+    fdp:metadataIdentifier <{uri}> ;
     fdp:metadataIssued "{ds['created_at']}Z"^^xsd:dateTime ;
     fdp:metadataModified "{now}"^^xsd:dateTime ;
     ldp:contains {contains} .
@@ -408,7 +414,7 @@ def dist_web(orcid, slug, n):
     return redirect_to_dataset(orcid, slug)
 
 
-@bp.route("/void/<orcid>/<slug>")
+@bp.route("/dataset/<orcid>/<slug>/void")
 def void(orcid, slug):
     """VoID statistics for a public dataset — computed live from its endpoint.
 
