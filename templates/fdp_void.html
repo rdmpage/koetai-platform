@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}VoID — {{ ds.label }}{% endblock %}
+{% macro fmt(n) %}{% if n is not none and n >= 0 %}{{ "{:,}".format(n) }}{% else %}—{% endif %}{% endmacro %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('fdp.repository') }}">FAIR Data Point</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('fdp.catalog', orcid=user.orcid_id) }}">{{ user.name or user.orcid_id }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('fdp.dataset', orcid=user.orcid_id, slug=ds.slug) }}">{{ ds.label }}</a></li>
+        <li class="breadcrumb-item active">VoID</li>
+      </ol>
+    </nav>
+
+    <div class="d-flex align-items-start gap-3 mb-4">
+      <div class="flex-grow-1">
+        <h2 class="mb-1"><i class="bi bi-bar-chart-line text-primary"></i> VoID statistics</h2>
+        <p class="text-muted mb-0">
+          Vocabulary of Interlinked Datasets description of <strong>{{ ds.label }}</strong>,
+          computed live from its SPARQL endpoint.
+        </p>
+      </div>
+      <div class="d-flex flex-column align-items-end gap-1">
+        <a href="{{ void_uri }}" class="btn btn-sm btn-outline-secondary"
+           title="View as Turtle" onclick="event.preventDefault(); fetch(this.href,{headers:{'Accept':'text/turtle'}}).then(r=>r.text()).then(t=>{const w=window.open('','_blank');w.document.write('<pre>'+t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</pre>');});">
+          <i class="bi bi-file-earmark-code"></i> Turtle
+        </a>
+        <code class="text-muted" style="font-size:.65rem">curl -H 'Accept: text/turtle' {{ void_uri }}</code>
+      </div>
+    </div>
+
+    <!-- Metadata sections -->
+    <ul class="nav nav-pills mb-4 border-bottom pb-2">
+      <li class="nav-item me-1"><span class="nav-link disabled text-muted small px-2"><i class="bi bi-archive"></i> Metadata:</span></li>
+      <li class="nav-item"><a class="nav-link text-primary" href="{{ url_for('fdp.dataset', orcid=user.orcid_id, slug=ds.slug) }}"><i class="bi bi-award"></i> FAIR Data Point</a></li>
+      <li class="nav-item"><a class="nav-link active" href="{{ url_for('fdp.void', orcid=user.orcid_id, slug=ds.slug) }}"><i class="bi bi-bar-chart-line"></i> VoID statistics</a></li>
+    </ul>
+
+    {% if not stats.ok %}
+    <div class="alert alert-warning">
+      <i class="bi bi-exclamation-triangle"></i>
+      Could not compute VoID statistics{% if stats.error %}: <span class="small">{{ stats.error }}</span>{% endif %}.
+    </div>
+    {% else %}
+
+    <!-- Summary counters -->
+    <div class="row g-3 mb-4">
+      {% set cards = [
+        ('bi-database', 'Triples', stats.triples),
+        ('bi-box-arrow-in-right', 'Distinct subjects', stats.distinct_subjects),
+        ('bi-box-arrow-right', 'Distinct objects', stats.distinct_objects),
+        ('bi-link-45deg', 'Properties', stats.properties),
+        ('bi-diagram-3', 'Classes', stats.classes),
+      ] %}
+      {% for icon, label, val in cards %}
+      <div class="col-6 col-md">
+        <div class="card h-100 border-0 shadow-sm text-center">
+          <div class="card-body py-3">
+            <div class="text-muted small"><i class="bi {{ icon }}"></i> {{ label }}</div>
+            <div class="fs-4 fw-semibold">{{ fmt(val) }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="row g-4">
+      <!-- Class partitions -->
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold"><i class="bi bi-diagram-3 text-primary"></i> Classes</span>
+            <span class="badge bg-secondary">{{ stats.class_partitions|length }}{% if stats.class_truncated %}+{% endif %}</span>
+          </div>
+          <div class="table-responsive" style="max-height:26rem;overflow-y:auto">
+            <table class="table table-sm table-hover mb-0 small">
+              <thead class="table-light" style="position:sticky;top:0">
+                <tr><th>Class</th><th class="text-end">Entities</th></tr>
+              </thead>
+              <tbody>
+                {% for p in stats.class_partitions %}
+                <tr><td><code class="text-break" title="{{ p.uri }}">{{ curie(p.uri) }}</code></td>
+                    <td class="text-end">{{ "{:,}".format(p.count) }}</td></tr>
+                {% else %}
+                <tr><td colspan="2" class="text-muted">No typed resources found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if stats.class_truncated %}
+          <div class="card-footer text-muted small">Showing the largest {{ stats.class_partitions|length }} classes.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Property partitions -->
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold"><i class="bi bi-link-45deg text-primary"></i> Properties</span>
+            <span class="badge bg-secondary">{{ stats.property_partitions|length }}{% if stats.property_truncated %}+{% endif %}</span>
+          </div>
+          <div class="table-responsive" style="max-height:26rem;overflow-y:auto">
+            <table class="table table-sm table-hover mb-0 small">
+              <thead class="table-light" style="position:sticky;top:0">
+                <tr><th>Property</th><th class="text-end">Triples</th></tr>
+              </thead>
+              <tbody>
+                {% for p in stats.property_partitions %}
+                <tr><td><code class="text-break" title="{{ p.uri }}">{{ curie(p.uri) }}</code></td>
+                    <td class="text-end">{{ "{:,}".format(p.count) }}</td></tr>
+                {% else %}
+                <tr><td colspan="2" class="text-muted">No properties found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if stats.property_truncated %}
+          <div class="card-footer text-muted small">Showing the {{ stats.property_partitions|length }} most-used properties.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <p class="text-muted small mt-3">
+      <i class="bi bi-info-circle"></i>
+      Serialized as a <code>void:Dataset</code> using the
+      <a href="http://rdfs.org/ns/void#" target="_blank">VoID</a> vocabulary.
+      Statistics are computed on request and reflect the endpoint's current contents.
+    </p>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

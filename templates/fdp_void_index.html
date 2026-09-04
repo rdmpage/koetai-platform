@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}VoID statistics{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <div>
+        <h2 class="mb-0"><i class="bi bi-bar-chart-line text-primary"></i> VoID statistics</h2>
+        <p class="text-muted mb-0">Vocabulary of Interlinked Datasets profiles for all public datasets</p>
+      </div>
+    </div>
+
+    <div class="alert alert-light border small mb-4">
+      <strong>VoID</strong> describes a dataset's structure — its classes, properties and counts —
+      computed live from each SPARQL endpoint. Each profile is content-negotiable:
+      request <code>Accept: text/turtle</code> for a <code>void:Dataset</code> in Turtle.
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-collection text-primary"></i> Public datasets
+        <span class="badge bg-secondary ms-1">{{ datasets|length }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if datasets %}
+        <ul class="list-group list-group-flush">
+          {% for d in datasets %}
+          <li class="list-group-item d-flex align-items-center justify-content-between">
+            <div>
+              <a href="{{ url_for('fdp.void', orcid=d.orcid_id, slug=d.slug) }}"
+                 class="fw-semibold text-decoration-none">
+                <i class="bi bi-database text-success"></i> {{ d.label }}
+              </a>
+              {% if d.description %}<span class="text-muted small ms-2">{{ d.description }}</span>{% endif %}
+              <div class="text-muted small">{{ d.owner or d.orcid_id }} · ORCID {{ d.orcid_id }}</div>
+            </div>
+            <div class="btn-group">
+              <a href="{{ url_for('fdp.void', orcid=d.orcid_id, slug=d.slug) }}"
+                 class="btn btn-sm btn-outline-primary" title="VoID statistics">
+                <i class="bi bi-bar-chart-line"></i> VoID
+              </a>
+              <a href="{{ url_for('fdp.dataset', orcid=d.orcid_id, slug=d.slug) }}"
+                 class="btn btn-sm btn-outline-secondary" title="FAIR Data Point record">
+                <i class="bi bi-award"></i> FDP
+              </a>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No public datasets registered yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="text-muted small">
+      <hr>
+      Profiles use the <a href="http://rdfs.org/ns/void#" target="_blank">VoID</a> vocabulary and are
+      linked from each dataset's <a href="{{ url_for('fdp.repository') }}">FAIR Data Point</a> record.
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -3,8 +3,10 @@
   Import WITH context so current_user is available:
     {% from '_ds_nav.html' import ds_nav with context %}
   Usage: {{ ds_nav(ds, 'upload') }}
-  active: overview | upload | sparql | examples | shapes | api | git | web | fdp | fdp-meta
+  active: overview | upload | sparql | examples | shapes | api | git | web
+          | fdp | void | fdp-meta   (the last three live under the Metadata menu)
 #}
+{% set _meta_active = ['fdp', 'void', 'fdp-meta'] %}
 {% macro ds_nav(ds, active) %}
 <ul class="nav nav-tabs mt-3 mb-3" id="dsTabs">
   <li class="nav-item">
@@ -55,20 +57,41 @@
       <i class="bi bi-globe2"></i> Web
     </a>
   </li>
-  {% if ds.is_public %}
-  <li class="nav-item">
-    <a class="nav-link {% if active == 'fdp' %}active{% endif %}"
-       href="{{ url_for('fdp.dataset', orcid=ds.orcid_id, slug=ds.slug) }}">
-      <i class="bi bi-award text-primary"></i> FDP
+  {% set _is_owner = current_user.is_authenticated and current_user.id == ds.user_id %}
+  {% if ds.is_public or _is_owner %}
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle {% if active in _meta_active %}active{% endif %}"
+       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="bi bi-archive text-primary"></i> Metadata
     </a>
-  </li>
-  {% endif %}
-  {% if current_user.is_authenticated and current_user.id == ds.user_id %}
-  <li class="nav-item">
-    <a class="nav-link {% if active == 'fdp-meta' %}active{% endif %}"
-       href="{{ url_for('datasets.fdp_meta_page', owner_orcid=ds.orcid_id, slug=ds.slug) }}">
-      <i class="bi bi-pencil-square"></i> FDP Metadata
-    </a>
+    <ul class="dropdown-menu">
+      {% if ds.is_public %}
+      <li>
+        <a class="dropdown-item {% if active == 'fdp' %}active{% endif %}"
+           href="{{ url_for('fdp.dataset', orcid=ds.orcid_id, slug=ds.slug) }}">
+          <i class="bi bi-award text-primary"></i> FAIR Data Point
+          <span class="d-block small text-muted ms-4">DCAT / FDP-O record</span>
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item {% if active == 'void' %}active{% endif %}"
+           href="{{ url_for('fdp.void', orcid=ds.orcid_id, slug=ds.slug) }}">
+          <i class="bi bi-bar-chart-line text-primary"></i> VoID statistics
+          <span class="d-block small text-muted ms-4">Class &amp; property profile</span>
+        </a>
+      </li>
+      {% endif %}
+      {% if _is_owner %}
+      {% if ds.is_public %}<li><hr class="dropdown-divider"></li>{% endif %}
+      <li>
+        <a class="dropdown-item {% if active == 'fdp-meta' %}active{% endif %}"
+           href="{{ url_for('datasets.fdp_meta_page', owner_orcid=ds.orcid_id, slug=ds.slug) }}">
+          <i class="bi bi-pencil-square"></i> Edit FDP metadata
+          <span class="d-block small text-muted ms-4">Keywords, theme, license, version</span>
+        </a>
+      </li>
+      {% endif %}
+    </ul>
   </li>
   {% endif %}
 </ul>
