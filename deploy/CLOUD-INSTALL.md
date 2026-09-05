@@ -37,10 +37,29 @@ not return space to the filesystem until the store is compacted.
 fixed at whatever the plan includes. A volume can be enlarged later without
 rebuilding the machine, and this is the resource you will run out of first.
 
-**Memory matters less than you would expect.** Oxigraph answers queries from
-disk: a full aggregate over 102 million triples ran in 29 seconds while the
-process held under 300 MB. RAM buys page cache, which makes queries quicker, and
-headroom for loading. 8 GB is workable, 16 GB comfortable.
+**Memory: 16 GB, and the reason is not what you would guess.**
+
+Serving is cheap. Oxigraph answers from disk — a full aggregate over 102 million
+triples ran in 29 seconds while the process held under 300 MB. Adding datasets
+does not raise that; RAM only buys page cache, which makes queries quicker.
+
+Loading is what costs, and how much depends on which path:
+
+| | measured |
+|---|---|
+| Query over 102M triples | ~300 MB |
+| Ordinary upload (batched) | ~1.5 GB above resting, whatever the file size |
+| Fast load, 9M triples | **4.1 GB**, and it grows with the file |
+
+The ordinary upload path sends the file in batches, so its cost is bounded by
+the batch and not the file. The fast loader sorts in memory instead, which is
+where the speed comes from and why it is the hungriest thing here.
+
+So: **8 GB is enough if you only ever use ordinary uploads. 16 GB is the
+sensible floor if you use the fast loader**, and 32 GB if you routinely fast-load
+files of many gigabytes. `LOADER_MEMORY` caps the loader (6 GB by default) so an
+oversized import fails on its own rather than taking the host with it — worth
+raising if you have the RAM, since hitting the cap fails the load.
 
 **Processor: ARM is the better buy.** Hetzner's ARM (CAX) instances cost
 substantially less per core than the x86 lines, and Oxigraph ships multi-arch
