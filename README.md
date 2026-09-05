@@ -301,6 +301,14 @@ anything, because it is written into every dataset's graph URIs, and set
 `KOETAI_ADMIN_ORCIDS` to your own ORCID, because registration is invitation-only
 and nothing else creates the first administrator.
 
+**There are no backups, by design.** For a single-author instance holding data
+that also exists on the author's own machine, a backup regime costs more
+attention than it earns. That stops being true as soon as other people's work is
+in there, anything cites it, or it holds shapes and examples authored in the UI
+and nowhere else. `deploy/BACKUPS.md` sets out what is at risk — the SQLite
+database, ~100 KB and irreplaceable, as against a triplestore that is enormous
+and reloadable — and a shape for adding one when that day comes.
+
 ### Run
 
 ```bash

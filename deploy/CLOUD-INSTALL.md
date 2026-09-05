@@ -208,7 +208,9 @@ administrator. You should arrive at an empty dashboard with an Admin menu.
 - **Backups.** Nothing here backs anything up. What matters is the `koetai-data`
   volume — it holds the SQLite database, which is the only copy of your users,
   datasets and shapes. The triplestore volumes hold data that can be reloaded
-  from sources; the database cannot be reconstructed.
+  from sources; the database cannot be reconstructed. `deploy/BACKUPS.md` covers
+  what is worth copying, why a plain `cp` of a live SQLite file is unsafe, and
+  when deferring this stops being reasonable.
 - **The fast loader.** `docker-compose.yml` has an optional `loader` service,
   behind the `fastload` profile, that makes large imports several times quicker.
   It mounts the Docker socket, which is root on the host. On a machine only you
