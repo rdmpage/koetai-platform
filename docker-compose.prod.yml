@@ -53,6 +53,13 @@ services:
           memory: ${KOETAI_MEM_LIMIT:-1g}
 
   fuseki:
+    # Opt-in in production. The base file starts Fuseki because a laptop install
+    # should hold your data without you having to choose an engine first; on a
+    # server you have chosen. An idle Fuseki is not free — the JVM claims its
+    # heap whether or not anything is stored, measured at 4.2 GB holding nothing,
+    # which on a 16 GB machine is a quarter of the RAM. Start it with
+    # `--profile fuseki` if you actually want Fuseki-backed datasets.
+    profiles: ["fuseki"]
     environment:
       - JVM_ARGS=-Xmx${FUSEKI_HEAP:-2g}
       - ADMIN_PASSWORD=${FUSEKI_ADMIN_PASSWORD:?set a real Fuseki password}

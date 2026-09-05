@@ -71,6 +71,36 @@ no ARM build. Shape *inference* is unaffected; it is a Python package.
 A CAX31-sized machine — 8 vCPU, 16 GB — with a 100 GB volume is a reasonable
 starting point for a few hundred million triples.
 
+### Making 16 GB go far
+
+The pieces do not all peak together, which is what makes this comfortable rather
+than tight:
+
+| | at rest | at peak |
+|---|---|---|
+| Oxigraph | ~0.3 GB | ~6 GB during a batched load |
+| The app | ~60 MB | ~100 MB |
+| Fast loader | not running | up to `LOADER_MEMORY` (6 GB) |
+| Fuseki, if started | **4.2 GB holding nothing** | more |
+
+The store and the fast loader never overlap: the loader only runs while the
+store is stopped, which is the whole reason it needs stopping. So the peak is
+one or the other, not both.
+
+Fuseki is the thing to watch. The JVM claims its heap whether or not anything is
+in it, so an unused Fuseki costs about 4 GB on a machine where that is a quarter
+of the RAM. The production overlay therefore does **not** start it. Add
+`--profile fuseki` if you want Fuseki-backed datasets, and drop `FUSEKI_HEAP` to
+suit if you do.
+
+On 16 GB with Oxigraph alone, these are reasonable:
+
+```bash
+OXIGRAPH_MEM_LIMIT=8g
+LOADER_MEMORY=8g
+KOETAI_MEM_LIMIT=1g
+```
+
 ## 2. Point DNS at the server
 
 Add an `A` record for your domain to the server's IPv4 address, and an `AAAA`
