@@ -115,13 +115,33 @@ Check it has propagated:
 dig +short YOUR-DOMAIN
 ```
 
+### If your DNS is on Cloudflare, turn the proxy off
+
+Set the record to **DNS only** — the grey cloud, not the orange one.
+
+Cloudflare's proxy caps the size of a request body, at 100 MB on the free plan.
+This platform exists to move files considerably larger than that, and the proxy
+rejects them before they reach Caddy or the app, so the size limits you have
+configured here are never consulted and the error does not mention size. Uploads
+below the cap work, which makes it a confusing thing to diagnose later.
+
+Proxying also terminates TLS at Cloudflare, and Caddy is already obtaining a
+certificate for you, so there is nothing gained here to weigh against it. If you
+want Cloudflare's other features, put them in front of something that is not the
+upload path.
+
 ## 3. Install Docker and get the code
 
 ```bash
 curl -fsSL https://get.docker.com | sh
-git clone https://github.com/Koetai/koetai-platform.git
+git clone https://github.com/rdmpage/koetai-platform.git
 cd koetai-platform
 ```
+
+That is the fork, deliberately. The production overlay and the Caddy
+configuration this guide depends on are not in the upstream repository, so a
+clone of `Koetai/koetai-platform` reaches step 5 and stops with a missing
+`docker-compose.prod.yml`.
 
 If you attached a volume, mount it and put Docker's data on it, so the stores
 land on the big disk rather than the small one. Hetzner mounts volumes under
@@ -139,11 +159,16 @@ KOETAI_DOMAIN=koetai.example.org
 BASE_URL=https://koetai.example.org
 
 # Anything long and random. Sessions are signed with it; changing it later
-# signs everyone out.
+# signs everyone out. Generate it on the server —
+#   openssl rand -hex 32
+# — rather than anywhere it would pass through a third party on the way.
 SECRET_KEY=CHANGE-ME
 
-# From https://orcid.org/developer-tools. The redirect URI must match exactly.
-ORCID_CLIENT_ID=APP-XXXXXXXXXXXXXXXX
+# From https://orcid.org/developer-tools. Copy the client ID exactly as that
+# page gives it, whatever shape it is — on a personal account it is commonly
+# your own ORCID iD rather than an APP-prefixed code, and that is correct.
+# The redirect URI must match what you registered, character for character.
+ORCID_CLIENT_ID=0000-0000-0000-0000
 ORCID_CLIENT_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ORCID_REDIRECT_URI=https://koetai.example.org/auth/callback
 
@@ -220,8 +245,10 @@ administrator. You should arrive at an empty dashboard with an Admin menu.
 - **A firewall.** Only 80 and 443 need to be open. Nothing else in the stack
   publishes a port — the app, the stores and the agent all talk over the compose
   network.
-- **Fuseki.** Started only if you ask for it (`--profile fuseki` is not needed;
-  it is in the base file, so it starts by default — remove it if unwanted).
+- **Fuseki.** The production overlay puts it behind a profile, so it does *not*
+  start with the command in step 5 — an idle JVM costs about 4.2 GB holding
+  nothing. Add `--profile fuseki` alongside `--profile oxigraph` if you want
+  Fuseki-backed datasets.
 
 ## If something goes wrong
 
@@ -240,3 +267,6 @@ matching what is registered with ORCID — including `https` versus `http`.
 store running out of memory; loads are now sent in batches, which bounds it.
 Check Admin → Storage for headroom, and `dmesg | grep -i "killed process"` on
 the host for a definitive answer.
+
+**Uploads above about 100 MB fail, smaller ones work.** A proxy in front of the
+server is refusing the body — Cloudflare's does this by default. See step 2.
