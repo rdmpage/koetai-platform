@@ -33,9 +33,11 @@ not return space to the filesystem until the store is compacted.
 | 300 M | ~57 GB | 100 GB |
 | 500 M | ~95 GB | 160 GB |
 
-**Attach a volume rather than relying on the server's own disk**, which is
-fixed at whatever the plan includes. A volume can be enlarged later without
-rebuilding the machine, and this is the resource you will run out of first.
+In practice the disk tends to sort itself out: plans scale disk with memory, so
+a machine chosen for the RAM below already comes with far more space than the
+table asks for. The install tested here had 301 GB — around 1.5 billion triples'
+worth — on a 16 GB machine. Check Admin → Storage occasionally rather than
+planning for it now.
 
 **Memory: 16 GB, and the reason is not what you would guess.**
 
@@ -68,8 +70,8 @@ image in `docker-compose.yml` is x86-only (use a multi-arch one, or leave Fuseki
 alone — Oxigraph is the default), and RUDOF, which shape *validation* uses, has
 no ARM build. Shape *inference* is unaffected; it is a Python package.
 
-A CAX31-sized machine — 8 vCPU, 16 GB — with a 100 GB volume is a reasonable
-starting point for a few hundred million triples.
+A CAX31-sized machine — 8 vCPU, 16 GB — is a reasonable starting point for a
+few hundred million triples, and its included disk covers that comfortably.
 
 ### Making 16 GB go far
 
@@ -142,10 +144,6 @@ That is the fork, deliberately. The production overlay and the Caddy
 configuration this guide depends on are not in the upstream repository, so a
 clone of `Koetai/koetai-platform` reaches step 5 and stops with a missing
 `docker-compose.prod.yml`.
-
-If you attached a volume, mount it and put Docker's data on it, so the stores
-land on the big disk rather than the small one. Hetzner mounts volumes under
-`/mnt/HC_Volume_NNNNN`.
 
 ## 4. Write the configuration
 
