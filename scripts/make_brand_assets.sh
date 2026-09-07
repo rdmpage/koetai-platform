@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 # Regenerate every brand asset derived from static/logo-icon.svg.
 #
+# ── DO NOT RUN THIS WITHOUT READING THIS PARAGRAPH ──────────────────────────
+# Nothing it writes is in use any more. The navbar now carries upstream's
+# static/anableps.svg, and the favicons are upstream's files, adopted verbatim
+# so this fork's branding matches the project's. Running this script would
+# silently overwrite all three favicons with versions generated from
+# logo-icon.svg and undo that.
+#
+# It is kept because the artwork question is unresolved rather than settled:
+# upstream's mark is a scientific engraving whose hatching dissolves below
+# about 48px, which is why these generated versions existed. If that gets
+# revisited with upstream, this is the machinery to do it with — and the two
+# ImageMagick traps recorded at the bottom are the part worth keeping.
+#
 # logo-icon.svg is the only hand-maintained artwork; edit it and re-run this.
 # Everything below is generated, so don't hand-edit the outputs.
 #
