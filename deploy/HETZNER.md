@@ -23,7 +23,7 @@ As of 22 September 2026 that includes:
 | Saved-example Load button fix | PR #14 | no |
 | Federation: accept a query POSTed as the body | PR #15 | no |
 | Batched, background dataset delete | PR #16 | no |
-| Graph browser (Browse tab) | not yet a PR — on `main` | no |
+| Graph browser (Browse tab) | PR #17 (from `main`) | no |
 
 Deploying `main` today would take away the production compose overlay this
 server runs on, and the fast loader with it. The command-line `bulk_load.sh`
@@ -50,8 +50,10 @@ for b in pr/10-cloud-install pr/12-docs-first-admin pr/07-bulk-loader \
 done
 ```
 
-`main` is in the list because it can carry work not yet in a PR (the graph
-browser, as of 2 October 2026); once that is a PR branch, list the branch instead.
+`main` is in the list because PR #17 (the graph browser) is opened from `main`
+itself rather than a `pr/` branch. Until it is merged, `main` is ahead of
+`upstream/main`, so do not reset it with `git branch -f main upstream/main` —
+that would drop the PR's commits.
 The one conflict pr/16 has with it is in `routes/datasets.py`: keep the
 `browse` route and drop `_remove_upload_dir`, which pr/16 moved into
 `services/job_runner.py`.
@@ -125,6 +127,6 @@ If any of those are missing, the merge list above is out of date.
 
 ## When everything lands
 
-Once #7, #10, #12, #15 and #16 are all merged upstream, this branch has no reason to
+Once #7, #10, #12, #15, #16 and #17 are all merged upstream, this branch has no reason to
 exist: `main` becomes deployable on its own, and `deploy/hetzner` and this file
 can go.
