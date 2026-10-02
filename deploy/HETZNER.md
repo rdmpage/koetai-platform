@@ -22,6 +22,8 @@ As of 22 September 2026 that includes:
 | QLever README section | PR #13 | no |
 | Saved-example Load button fix | PR #14 | no |
 | Federation: accept a query POSTed as the body | PR #15 | no |
+| Batched, background dataset delete | PR #16 | no |
+| Graph browser (Browse tab) | not yet a PR — on `main` | no |
 
 Deploying `main` today would take away the production compose overlay this
 server runs on, and the fast loader with it. The command-line `bulk_load.sh`
@@ -42,10 +44,17 @@ git branch -f main upstream/main            # main mirrors upstream, always
 git branch -D deploy/hetzner 2>/dev/null
 git switch -c deploy/hetzner main
 for b in pr/10-cloud-install pr/12-docs-first-admin pr/07-bulk-loader \
-         pr/13-qlever-docs pr/14-example-buttons pr/15-sparql-post-direct; do
+         pr/13-qlever-docs pr/14-example-buttons pr/15-sparql-post-direct \
+         pr/16-batched-delete main; do
   git merge --no-edit "$b" || break      # resolve, commit, then rerun the rest
 done
 ```
+
+`main` is in the list because it can carry work not yet in a PR (the graph
+browser, as of 2 October 2026); once that is a PR branch, list the branch instead.
+The one conflict pr/16 has with it is in `routes/datasets.py`: keep the
+`browse` route and drop `_remove_upload_dir`, which pr/16 moved into
+`services/job_runner.py`.
 
 Drop a branch from that list as soon as its PR is merged — once the work is
 upstream, `main` carries it and re-merging only invites conflicts.
@@ -116,6 +125,6 @@ If any of those are missing, the merge list above is out of date.
 
 ## When everything lands
 
-Once #7, #10, #12 and #15 are all merged upstream, this branch has no reason to
+Once #7, #10, #12, #15 and #16 are all merged upstream, this branch has no reason to
 exist: `main` becomes deployable on its own, and `deploy/hetzner` and this file
 can go.
