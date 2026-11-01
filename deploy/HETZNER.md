@@ -27,6 +27,7 @@ As of 1 November 2026 that includes:
 | Graph browser (Browse tab) | PR #17 (from `main`) | no |
 | Oxigraph open-file limit (`ulimits` on the service) | PR #21 (branch `pr/18-oxigraph-open-files`) | no |
 | Same limit for the loader agent's Oxigraph runs | PR #7 (added to it) | no |
+| Cross-dataset SPARQL endpoints (`/sparql/<store>`) | PR #23 | no |
 
 Deploying `main` today would take away the production compose overlay this
 server runs on, and the fast loader with it. The command-line `bulk_load.sh`
@@ -65,7 +66,8 @@ git branch -D deploy/hetzner 2>/dev/null
 git switch -c deploy/hetzner upstream/main
 for b in pr/10-cloud-install pr/12-docs-first-admin pr/07-bulk-loader \
          pr/13-qlever-docs pr/14-example-buttons pr/15-sparql-post-direct \
-         pr/16-batched-delete pr/18-oxigraph-open-files main; do
+         pr/16-batched-delete pr/18-oxigraph-open-files \
+         pr/23-cross-dataset-sparql main; do
   git merge --no-edit "$b" || break      # resolve, commit, then rerun the rest
 done
 git push --force-with-lease origin deploy/hetzner
@@ -148,6 +150,6 @@ If any of those are missing, the merge list above is out of date.
 
 ## When everything lands
 
-Once #7, #10, #12, #15, #16, #17 and #21 are all merged upstream, this branch has no reason to
+Once #7, #10, #12, #15, #16, #17, #21 and #23 are all merged upstream, this branch has no reason to
 exist: `main` becomes deployable on its own, and `deploy/hetzner` and this file
 can go.
