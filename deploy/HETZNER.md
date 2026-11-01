@@ -1,8 +1,9 @@
 # Deploying to the Hetzner box
 
-**Do not deploy `main`.** `main` mirrors upstream (`Koetai/koetai-platform`), and
-several things this server depends on are still sitting in unmerged pull
-requests. Deploy the `deploy/hetzner` branch instead.
+**Do not deploy `main`.** `main` is upstream (`Koetai/koetai-platform`) plus the
+graph browser (PR #17), and several things this server depends on are still
+sitting in other unmerged pull requests. Deploy the `deploy/hetzner` branch
+instead.
 
 ## Why this trap exists
 
@@ -11,7 +12,7 @@ Between opening a PR and it being merged, that work exists only on its own
 branch — so `main` can be perfectly up to date and still be missing a feature
 this box runs on.
 
-As of 22 September 2026 that includes:
+As of 1 November 2026 that includes:
 
 | Wanted here | Comes from | Upstream yet? |
 |---|---|---|
@@ -31,43 +32,61 @@ Deploying `main` today would take away the production compose overlay this
 server runs on, and the fast loader with it. The command-line `bulk_load.sh`
 would survive, since that one is already upstream.
 
-## Rebuilding the branch
+## Updating the branch
 
-`deploy/hetzner` is a merge of upstream plus whatever is still open. It is
-local-only and is never pushed or PR'd — it exists to be thrown away and
-regenerated, which is how it stays honest as PRs land.
+`deploy/hetzner` is upstream plus whatever is still open. It is never PR'd, but
+it **is** pushed to `origin`: the box deploys it with `git pull`. So it only ever
+moves forward. Bring new work in by merging, then push:
 
 ```bash
 git fetch upstream
-git branch -f main upstream/main            # main mirrors upstream, always
+git switch main && git merge upstream/main   # not `git branch -f`: see below
+git switch deploy/hetzner
+git merge --no-edit main                      # and any pr/ branch that gained commits
+git push origin deploy/hetzner                # a fast-forward, so the box can pull it
+```
 
+`main` is merged into, never reset, because PR #17 (the graph browser) is opened
+from `main` itself rather than a `pr/` branch. Until it is merged, `main` is
+ahead of `upstream/main`, and `git branch -f main upstream/main` (or a rebase)
+would drop or rewrite the PR's commits.
+
+## Regenerating the branch (rarely)
+
+Regenerate only when a PR has landed upstream in a form that conflicts with the
+copy merged here, so that the old branch has to come out. This rewrites
+history, so it needs a force-push, and the box then needs
+`git fetch origin && git reset --hard origin/deploy/hetzner` instead of a pull.
+
+```bash
 # Whatever is still open, oldest first. Check with:
 #   gh pr list --repo Koetai/koetai-platform --state open
 git branch -D deploy/hetzner 2>/dev/null
-git switch -c deploy/hetzner main
+git switch -c deploy/hetzner upstream/main
 for b in pr/10-cloud-install pr/12-docs-first-admin pr/07-bulk-loader \
          pr/13-qlever-docs pr/14-example-buttons pr/15-sparql-post-direct \
          pr/16-batched-delete pr/18-oxigraph-open-files main; do
   git merge --no-edit "$b" || break      # resolve, commit, then rerun the rest
 done
+git push --force-with-lease origin deploy/hetzner
 ```
 
-`main` is in the list because PR #17 (the graph browser) is opened from `main`
-itself rather than a `pr/` branch. Until it is merged, `main` is ahead of
-`upstream/main`, so do not reset it with `git branch -f main upstream/main` —
-that would drop the PR's commits.
-The one conflict pr/16 has with it is in `routes/datasets.py`: keep the
-`browse` route and drop `_remove_upload_dir`, which pr/16 moved into
-`services/job_runner.py`.
+`main` is in the list for PR #17. Drop a branch from it as soon as its PR is
+merged: once the work is upstream, `main` carries it and re-merging only
+invites conflicts.
 
-Drop a branch from that list as soon as its PR is merged — once the work is
-upstream, `main` carries it and re-merging only invites conflicts.
+### Conflicts seen so far
 
-### The one conflict that recurs
-
-PRs #7 and #13 both append a section to `README.md` at the same anchor, just
-before `### Federation datasets (Comunica)`. Keep both, QLever first, then
-"Loading a large file faster". Nothing else has conflicted so far.
+- **`README.md`, PRs #7 and #13.** Both append a section at the same anchor,
+  just before `### Federation datasets (Comunica)`. Keep both, QLever first,
+  then "Loading a large file faster". This one recurs.
+- **`routes/datasets.py`, PR #16 and `main`.** Keep the `browse` route and drop
+  `_remove_upload_dir`, which PR #16 moved into `services/job_runner.py`.
+- **`templates/yasgui.html`, PR #14 and upstream (1 November 2026).** Upstream
+  fixed the saved-example keyword parsing (issue #18) in the same lines PR #14
+  rewrote. Keep PR #14's `exampleKeywords()` and `data-example` Load buttons,
+  which also accept the older comma-separated form; upstream's `isUrl()` links
+  elsewhere in the file merge cleanly.
 
 ## Deploying
 
