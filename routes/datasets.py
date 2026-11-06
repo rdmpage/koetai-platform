@@ -413,7 +413,6 @@ def sparql_endpoint(owner_orcid, slug):
     return proxy_query(triplestore.get(ds), query, triplestore.dataset_scope(ds))
 
 
-
 @bp.route("/<owner_orcid>/<slug>/browse")
 def browse(owner_orcid, slug):
     """Graph browser (miller-browser) over this dataset's own SPARQL endpoint."""
@@ -432,6 +431,22 @@ def browse(owner_orcid, slug):
                  "maxZoom": config.MAP_TILE_MAX_ZOOM}
     return render_template("browse.html", ds=ds, tiles=tiles)
 
+
+def _remove_upload_dir(ds):
+    """Delete the dataset's uploaded source files along with the dataset.
+
+    Deleting a dataset used to drop its graphs and its database row and leave
+    every file that had ever been uploaded to it on disk, unreferenced and
+    invisible — the only trace being a directory named after a slug that no
+    longer existed.
+    """
+    target = (config.UPLOAD_DIR / str(ds["user_id"]) / ds["slug"]).resolve()
+    root   = config.UPLOAD_DIR.resolve()
+    # A slug is constrained at creation, but resolve-and-check is cheap and this
+    # is an rmtree.
+    if root not in target.parents or not target.is_dir():
+        return
+    shutil.rmtree(target, ignore_errors=True)
 
 
 @bp.route("/<owner_orcid>/<slug>/delete", methods=["POST"])

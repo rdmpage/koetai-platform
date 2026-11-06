@@ -203,7 +203,6 @@ container split.
 The sensible use of QLever here is a **published** dataset rather than an
 editable one: build the index yourself, point `QLEVER_PLATFORM_URL` at the
 server, and query it. Uploads belong on Oxigraph or Fuseki.
-
 ### Loading a large file faster
 
 Uploads go into the store over the SPARQL Graph Store Protocol, which is the
@@ -396,6 +395,24 @@ background thread that polls the upload-jobs table; a second worker would start 
 second runner and the two would race to claim the same job. Scale with `--threads`,
 not `--workers`. The included `koetai-platform.service` systemd unit and the
 `Dockerfile` both run one worker.
+
+### Replacing a dataset from the command line
+
+To swap a dataset's data for an updated file without the upload page (the
+equivalent of ticking "Replace existing data"), run on the server:
+
+```bash
+# Docker: copies the file into the container and loads it there
+scripts/replace-dataset.sh --slug col --file ~/taxa.nt.gz
+# Without Docker
+python3 scripts/replace_dataset.py --slug col --file ~/taxa.nt.gz
+```
+
+It runs the same upload job as the web UI, so it works on every backend and
+accepts the same formats and archives. `--append` adds instead of replacing,
+`--owl` applies reasoning, and `--owner <ORCID>` picks the dataset when two
+owners share a slug. It exits non-zero if the load fails, so it can run from
+cron or a pipeline. The dataset must already exist.
 
 ### Database
 
