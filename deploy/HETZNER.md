@@ -1,9 +1,8 @@
 # Deploying to the Hetzner box
 
-**Do not deploy `main`.** `main` is upstream (`Koetai/koetai-platform`) plus the
-graph browser (PR #17), and several things this server depends on are still
-sitting in other unmerged pull requests. Deploy the `deploy/hetzner` branch
-instead.
+**Do not deploy `main`.** `main` is an exact mirror of upstream
+(`Koetai/koetai-platform`), and one thing this server uses is still sitting in
+an unmerged pull request. Deploy the `deploy/hetzner` branch instead.
 
 ## Why this trap exists
 
@@ -12,26 +11,26 @@ Between opening a PR and it being merged, that work exists only on its own
 branch — so `main` can be perfectly up to date and still be missing a feature
 this box runs on.
 
-As of 1 November 2026 that includes:
+As of 6 November 2026 (upstream merged most of the list on 5 November):
 
 | Wanted here | Comes from | Upstream yet? |
 |---|---|---|
 | `scripts/bulk_load.sh` (CLI bulk load) | PR #5 | **yes** |
-| Loader agent + **Fast load** button | PR #7 | no |
-| `docker-compose.prod.yml`, `Caddyfile.prod` | PR #10 | no |
-| First-administrator bootstrap, install/backup docs | PR #12 | no |
-| QLever README section | PR #13 | no |
+| Loader agent + **Fast load** button | PR #7 | **yes** |
+| `docker-compose.prod.yml`, `Caddyfile.prod` | PR #10 | **yes** |
+| First-administrator bootstrap, install/backup docs | PR #12 | **yes** |
+| QLever README section | PR #13 | **yes** |
 | Saved-example Load button fix | PR #14 | no |
-| Federation: accept a query POSTed as the body | PR #15 | no |
-| Batched, background dataset delete | PR #16 | no |
-| Graph browser (Browse tab) | PR #17 (from `main`) | no |
-| Oxigraph open-file limit (`ulimits` on the service) | PR #21 (branch `pr/18-oxigraph-open-files`) | no |
-| Same limit for the loader agent's Oxigraph runs | PR #7 (added to it) | no |
-| Cross-dataset SPARQL endpoints (`/sparql/<store>`) | PR #23 | no |
+| Federation: accept a query POSTed as the body | PR #15 | **yes** |
+| Batched, background dataset delete | PR #16 | **yes** |
+| Graph browser (Browse tab) | PR #17 (from `main`) | **yes** |
+| Oxigraph open-file limit (`ulimits` on the service) | PR #21 (branch `pr/18-oxigraph-open-files`) | **yes** |
+| Same limit for the loader agent's Oxigraph runs | PR #7 (added to it) | **yes** |
+| Cross-dataset SPARQL endpoints (`/sparql/<store>`) | PR #23 | **yes** |
 
-Deploying `main` today would take away the production compose overlay this
-server runs on, and the fast loader with it. The command-line `bulk_load.sh`
-would survive, since that one is already upstream.
+Deploying `main` today would only lose the PR #14 fix: saved-example Load
+buttons would print their query instead of rendering it. Everything else this
+box runs on is upstream.
 
 ## Updating the branch
 
@@ -41,16 +40,20 @@ moves forward. Bring new work in by merging, then push:
 
 ```bash
 git fetch upstream
-git switch main && git merge upstream/main   # not `git branch -f`: see below
+git branch -f main upstream/main             # main is a pure mirror again
 git switch deploy/hetzner
 git merge --no-edit main                      # and any pr/ branch that gained commits
 git push origin deploy/hetzner                # a fast-forward, so the box can pull it
 ```
 
-`main` is merged into, never reset, because PR #17 (the graph browser) is opened
-from `main` itself rather than a `pr/` branch. Until it is merged, `main` is
-ahead of `upstream/main`, and `git branch -f main upstream/main` (or a rebase)
-would drop or rewrite the PR's commits.
+`main` can be reset now that PR #17 (opened from `main` itself) is merged. If a
+PR is ever opened from `main` again, merge `upstream/main` into it instead until
+that PR lands: a reset or rebase would rewrite the PR's commits.
+
+Upstream squash-merges, so a PR that was merged here as its original commits
+comes back from `main` as a different commit with the same content. Those
+merges conflict on lines that are really identical; take `main`'s side
+(`git checkout --theirs <file>`) unless the file has something deploy-only.
 
 ## Regenerating the branch (rarely)
 
@@ -64,18 +67,14 @@ history, so it needs a force-push, and the box then needs
 #   gh pr list --repo Koetai/koetai-platform --state open
 git branch -D deploy/hetzner 2>/dev/null
 git switch -c deploy/hetzner upstream/main
-for b in pr/10-cloud-install pr/12-docs-first-admin pr/07-bulk-loader \
-         pr/13-qlever-docs pr/14-example-buttons pr/15-sparql-post-direct \
-         pr/16-batched-delete pr/18-oxigraph-open-files \
-         pr/23-cross-dataset-sparql main; do
+for b in pr/14-example-buttons; do
   git merge --no-edit "$b" || break      # resolve, commit, then rerun the rest
 done
 git push --force-with-lease origin deploy/hetzner
 ```
 
-`main` is in the list for PR #17. Drop a branch from it as soon as its PR is
-merged: once the work is upstream, `main` carries it and re-merging only
-invites conflicts.
+Drop a branch from the list as soon as its PR is merged: once the work is
+upstream, `main` carries it and re-merging only invites conflicts.
 
 ### Conflicts seen so far
 
@@ -84,6 +83,10 @@ invites conflicts.
   then "Loading a large file faster". This one recurs.
 - **`routes/datasets.py`, PR #16 and `main`.** Keep the `browse` route and drop
   `_remove_upload_dir`, which PR #16 moved into `services/job_runner.py`.
+- **`README.md`, `routes/datasets.py`, `services/job_runner.py`, merging
+  `main` on 6 November 2026.** The squash-merged copies of #13, #16 and #17
+  against the originals already here, plus #25 (command-line dataset replace).
+  Took `main`'s side of all three.
 - **`templates/yasgui.html`, PR #14 and upstream (1 November 2026).** Upstream
   fixed the saved-example keyword parsing (issue #18) in the same lines PR #14
   rewrote. Keep PR #14's `exampleKeywords()` and `data-example` Load buttons,
@@ -150,6 +153,5 @@ If any of those are missing, the merge list above is out of date.
 
 ## When everything lands
 
-Once #7, #10, #12, #15, #16, #17, #21 and #23 are all merged upstream, this branch has no reason to
-exist: `main` becomes deployable on its own, and `deploy/hetzner` and this file
+Once #14 is merged upstream, this branch has no reason to exist: `main` becomes deployable on its own, and `deploy/hetzner` and this file
 can go.
